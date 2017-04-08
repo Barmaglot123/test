@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		100AA94D1E9441AF0083653A /* libc++.1.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 100AA94C1E9441AF0083653A /* libc++.1.tbd */; };
 		1049E4431E90C08F006582EE /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 1049E4421E90C08F006582EE /* main.m */; };
 		1049E4461E90C08F006582EE /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 1049E4451E90C08F006582EE /* AppDelegate.m */; };
 		1049E44C1E90C08F006582EE /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 1049E44A1E90C08F006582EE /* Main.storyboard */; };
@@ -32,7 +33,22 @@
 		1049E4991E90D26A006582EE /* MyCollectionViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 1049E4981E90D26A006582EE /* MyCollectionViewController.m */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		1005CCB01E95651B00BB5135 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		1005CCA81E95624E00BB5135 /* Realm.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Realm.framework; path = "../../../../Downloads/realm-mobile-platform/SDKs/realm-cocoa_2.5.0/ios/static/Realm.framework"; sourceTree = "<group>"; };
+		100AA94C1E9441AF0083653A /* libc++.1.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = "libc++.1.tbd"; path = "usr/lib/libc++.1.tbd"; sourceTree = SDKROOT; };
 		1049E43E1E90C08F006582EE /* Test.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Test.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1049E4421E90C08F006582EE /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		1049E4441E90C08F006582EE /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -86,17 +102,28 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				100AA94D1E9441AF0083653A /* libc++.1.tbd in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		100AA94B1E9441AF0083653A /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				1005CCA81E95624E00BB5135 /* Realm.framework */,
+				100AA94C1E9441AF0083653A /* libc++.1.tbd */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		1049E4351E90C08E006582EE = {
 			isa = PBXGroup;
 			children = (
 				1049E4401E90C08F006582EE /* Test */,
 				1049E43F1E90C08F006582EE /* Products */,
+				100AA94B1E9441AF0083653A /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -194,6 +221,7 @@
 				1049E43A1E90C08E006582EE /* Sources */,
 				1049E43B1E90C08E006582EE /* Frameworks */,
 				1049E43C1E90C08E006582EE /* Resources */,
+				1005CCB01E95651B00BB5135 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -394,6 +422,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				DEVELOPMENT_TEAM = ZN9NX4S8EE;
+				ENABLE_BITCODE = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Test",
+					"$(PROJECT_DIR)/Test/UIKit+AFNetworking",
+				);
 				INFOPLIST_FILE = Test/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = Test.Test;
@@ -406,6 +440,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				DEVELOPMENT_TEAM = ZN9NX4S8EE;
+				ENABLE_BITCODE = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Test",
+					"$(PROJECT_DIR)/Test/UIKit+AFNetworking",
+				);
 				INFOPLIST_FILE = Test/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = Test.Test;
@@ -432,6 +472,7 @@
 				1049E45A1E90C08F006582EE /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 

@@ -10,49 +10,38 @@
 #import "AFNetworking.h"
 #import "MyCell.h"
 #import "AppDelegate.h"
+#import "Test+CoreDataModel.h"
+//#import <Realm/Realm.h>
+
 
 @interface MyCollectionViewController ()
 @property (strong, nonatomic) NSMutableArray * reloadSongs;
-@property (strong, nonatomic) NSArray * songs;
+@property (strong, nonatomic) NSMutableArray * songs;
 @property (strong, nonatomic) UIRefreshControl *refreshControl;
+@property (strong, nonatomic) NSManagedObjectContext *context;
 @end
 
 @implementation MyCollectionViewController
 
 static NSString * const reuseIdentifier = @"Cell";
--(NSManagedObjectContext *) manageObjectContext{
 
-    NSManagedObjectContext * context = nil;
-    id delegate = [[UIApplication sharedApplication]delegate];
-    if([delegate performSelector:@selector(manageObjectContext)]){
-        context = [delegate manageObjectContext];
-        
-    }
-    return context;
-}
 - (void)viewDidLoad {
     [super viewDidLoad];
-    [self loadData];
+    self.context = ((AppDelegate*)[[UIApplication sharedApplication] delegate]).persistentContainer.viewContext;
+    NSFetchRequest *fetchRequest = [[NSFetchRequest alloc] initWithEntityName:@"SongsEntity"];
+    fetchRequest.resultType = NSDictionaryResultType;
+    self.songs = [[self.context executeFetchRequest:fetchRequest error:nil] mutableCopy];
     self.refreshControl = [[UIRefreshControl alloc] init];
     [self.collectionView addSubview:self.refreshControl];
-    [self.refreshControl addTarget:self action:@selector(reloadCollectionView) forControlEvents:UIControlEventValueChanged];
+    [self.refreshControl addTarget:self action:@selector(loadData) forControlEvents:UIControlEventValueChanged];
     
+    [self loadData];
 
 }
 
 - (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];
 }
-
-/*
-#pragma mark - Navigation
-
-// In a storyboard-based application, you will often want to do a little preparation before navigation
-- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
-    // Get the new view controller using [segue destinationViewController].
-    // Pass the selected object to the new view controller.
-}
-*/
 
 #pragma mark <UICollectionViewDataSource>
 
@@ -62,7 +51,7 @@ static NSString * const reuseIdentifier = @"Cell";
 
 
 - (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section {
-    return self.songs.count-1 ;
+    return self.songs.count;
 }
 
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath {
@@ -83,93 +72,85 @@ static NSString * const reuseIdentifier = @"Cell";
     
     AFHTTPSessionManager *manager = [AFHTTPSessionManager manager];
     [manager GET:@"http://tomcat.kilograpp.com/songs/api/songs" parameters:nil progress:nil success:^(NSURLSessionTask *task, id responseObject) {
-        self.songs = responseObject;
-       NSLog(@"JSON: %@", responseObject);
-        [self setToCoreData: self.songs];
-    } failure:^(NSURLSessionTask *operation, NSError *error) {
-        NSLog(@"Error: %@", error);
-    }];
-    
-    
-}
-
--(void)reloadCollectionView{
-    
-    AFHTTPSessionManager *manager = [AFHTTPSessionManager manager];
-    [manager GET:@"http://tomcat.kilograpp.com/songs/api/songs" parameters:nil progress:nil success:^(NSURLSessionTask *task, id responseObject) {
-        self.reloadSongs = responseObject;
-
-        for (int i = 0; i < self.songs.count; i++){
-            if(![self.reloadSongs containsObject:[self.songs objectAtIndex:i]]){
-                //Удалить эту ячейку из таблицы
-                [self.collectionView performBatchUpdates:^{
-                    [self.collectionView deleteItemsAtIndexPaths:@[[NSIndexPath indexPathForRow: i inSection:0]]];
-  
-                } completion:nil];
-            }
-        }
         
-        for (int i = 0; i < self.reloadSongs.count; i++){
-            if(![self.songs containsObject:[self.reloadSongs objectAtIndex:i]]){
+        NSFetchRequest *fetchRequest = [[NSFetchRequest alloc] initWithEntityName:@"SongsEntity"];
+        fetchRequest.resultType = NSDictionaryResultType;
+        NSArray * tempArray = [[self.context executeFetchRequest:fetchRequest error:nil] mutableCopy];
+        
+        
+        for (int i = 0; i < [responseObject count]; i++ ){
+        
+            if(![tempArray containsObject:[responseObject objectAtIndex:i]]){
+            
                 
-                //Добавить эту ячейку в таблицу
-                [self.collectionView insertItemsAtIndexPaths:@[[NSIndexPath indexPathForRow:[self.songs count]-1 inSection:0]]];
+                NSManagedObject * newSong = [NSEntityDescription insertNewObjectForEntityForName:@"SongsEntity" inManagedObjectContext: self.context];
+                
+                [newSong setValue:[[responseObject objectAtIndex:i] objectForKey:@"label"] forKey:@"label"];
+                [newSong setValue:[[responseObject objectAtIndex:i] objectForKey:@"author"] forKey:@"author"];
+                [newSong setValue:[[responseObject objectAtIndex:i] objectForKey:@"id"] forKey:@"id"];
+                [newSong setValue:[[responseObject objectAtIndex:i] objectForKey:@"version"] forKey:@"version"];
+                NSLog(@"%@",[responseObject objectAtIndex:i]);
+                
+                
+                [self.songs insertObject:[responseObject objectAtIndex:i] atIndex:0];
+                
+                
+                NSIndexPath *indexPath = [NSIndexPath indexPathForRow:0 inSection:0];
+                [self.collectionView insertItemsAtIndexPaths:@[indexPath]];
             }
+            if(i < tempArray.count){
+                if(![responseObject containsObject:[tempArray objectAtIndex:i]]){
+                    
+                    NSPredicate *predicateID = [NSPredicate predicateWithFormat:@"id == %d",[[tempArray objectAtIndex:i]objectForKey:@"id"]];
+                    
+                    NSManagedObjectContext *myContext = self.context;
+                    NSFetchRequest *fetchToDeleteRequest = [[NSFetchRequest alloc] init];
+                    [fetchToDeleteRequest setEntity:[NSEntityDescription entityForName:@"SongsEntity" inManagedObjectContext:myContext]];
+                    [fetchToDeleteRequest setIncludesPropertyValues:NO];
+                    [fetchToDeleteRequest setPredicate:predicateID];
+
+                    NSError *error = nil;
+                    NSArray *deleteObject = [myContext executeFetchRequest:fetchToDeleteRequest error:&error];
+                    
+                    for (NSManagedObject *object in deleteObject) {
+                        [myContext deleteObject:object];
+                    }
+                    
+                    
+                    [self.songs removeObject:[tempArray objectAtIndex:i]];
+                    
+                    NSIndexPath *indexPath = [NSIndexPath indexPathForRow:i inSection:0];
+                    [self.collectionView deleteItemsAtIndexPaths:@[indexPath]];
+                }
+            }
+            
         }
-        
-       self.songs = self.reloadSongs;
+
+       NSLog(@"JSON: %@", responseObject);
     } failure:^(NSURLSessionTask *operation, NSError *error) {
         NSLog(@"Error: %@", error);
     }];
     
-    
-  
-    
-    [self.refreshControl endRefreshing];
-    
 }
--(void)setToCoreData: (NSArray *)dataArray{
-    NSManagedObjectContext *context = [self manageObjectContext];
-    
-    NSManagedObject * songsManagedObject = [NSEntityDescription insertNewObjectForEntityForName:@"SongsEntity" inManagedObjectContext:context];
-    for (NSDictionary * dict in dataArray){
-    
-        [songsManagedObject setValue:[dict objectForKey:@"author"] forKey:@"authorName"];
-        [songsManagedObject setValue:[dict objectForKey:@"label"]forKey:@"songName"];
-        [songsManagedObject setValue:[dict valueForKey:@"id"]forKey:@"id"];
 
+
+- (void)clearEntity:(NSString *)entity{
+    NSManagedObjectContext *myContext = self.context;
+    NSFetchRequest *fetchAllObjects = [[NSFetchRequest alloc] init];
+    [fetchAllObjects setEntity:[NSEntityDescription entityForName:entity inManagedObjectContext:myContext]];
+    [fetchAllObjects setIncludesPropertyValues:NO]; //only fetch the managedObjectID
+    
+    NSError *error = nil;
+    NSArray *allObjects = [myContext executeFetchRequest:fetchAllObjects error:&error];
+    // uncomment next line if you're NOT using ARC
+    // [allObjects release];
+ 
+    
+    for (NSManagedObject *object in allObjects) {
+        [myContext deleteObject:object];
     }
-  
-
+    
     
 }
-/*
-// Uncomment this method to specify if the specified item should be highlighted during tracking
-- (BOOL)collectionView:(UICollectionView *)collectionView shouldHighlightItemAtIndexPath:(NSIndexPath *)indexPath {
-	return YES;
-}
-*/
-
-/*
-// Uncomment this method to specify if the specified item should be selected
-- (BOOL)collectionView:(UICollectionView *)collectionView shouldSelectItemAtIndexPath:(NSIndexPath *)indexPath {
-    return YES;
-}
-*/
-
-/*
-// Uncomment these methods to specify if an action menu should be displayed for the specified item, and react to actions performed on the item
-- (BOOL)collectionView:(UICollectionView *)collectionView shouldShowMenuForItemAtIndexPath:(NSIndexPath *)indexPath {
-	return NO;
-}
-
-- (BOOL)collectionView:(UICollectionView *)collectionView canPerformAction:(SEL)action forItemAtIndexPath:(NSIndexPath *)indexPath withSender:(id)sender {
-	return NO;
-}
-
-- (void)collectionView:(UICollectionView *)collectionView performAction:(SEL)action forItemAtIndexPath:(NSIndexPath *)indexPath withSender:(id)sender {
-	
-}
-*/
 
 @end
